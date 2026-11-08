@@ -1,528 +1,210 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Convertitore File — Test PDF</title>
-<!-- Librerie necessarie -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book cafè Quattromiglia — Bar e book café a Rende (CS)</title>
+<meta name="description" content="Book cafè Quattromiglia: bar e book café in Via G. Marconi 28, Quattromiglia di Rende (CS). Aperti tutti i giorni dalle 6:00 alle 2:00. Tel. 0984 186 9466.">
+<meta property="og:title" content="Book cafè Quattromiglia">
+<meta property="og:description" content="Un caffè, un libro e tutto il tempo che vuoi. Aperti tutti i giorni 6:00–2:00, Via G. Marconi 28, Rende.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&amp;family=Inter:wght@400;500;600&amp;display=swap">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh; padding: 20px; color: #1a202c;
-  }
-  .app {
-    max-width: 900px; margin: 0 auto; background: #fff;
-    border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.3); padding: 28px;
-  }
-  header { margin-bottom: 22px; }
-  h1 { font-size: 22px; color: #2d3748; display: flex; align-items: center; gap: 10px; }
-  .badge { background: #edf2f7; color: #4a5568; font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
-  .subtitle { color: #718096; font-size: 13px; margin-top: 4px; }
-
-  .drop-zone {
-    border: 3px dashed #cbd5e0; border-radius: 12px; padding: 32px 20px;
-    text-align: center; cursor: pointer; transition: all .2s; background: #f7fafc;
-  }
-  .drop-zone:hover, .drop-zone.dragover { border-color: #667eea; background: #edf2f7; }
-  .drop-zone .icon { font-size: 40px; }
-  .drop-zone p { color: #4a5568; margin: 6px 0; }
-  .drop-zone .hint { font-size: 12px; color: #a0aec0; }
-  input[type="file"] { display: none; }
-
-  /* Pannello Impostazioni */
-  .settings {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 14px; margin-top: 18px; padding: 18px;
-    background: #f7fafc; border-radius: 12px;
-  }
-  .setting label {
-    display: block; font-size: 12px; font-weight: 600;
-    color: #4a5568; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .3px;
-  }
-  .setting select, .setting input[type="range"] {
-    width: 100%; padding: 8px; border: 1px solid #cbd5e0;
-    border-radius: 6px; font-size: 14px; background: #fff;
-  }
-  .setting input[type="range"] { padding: 0; }
-  .setting .val { color: #667eea; font-weight: 700; margin-left: 4px; }
-  .setting.actions { display: flex; gap: 8px; flex-direction: column; justify-content: flex-end; }
-  .checkbox-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
-  .checkbox-row input[type="checkbox"] { width: auto; margin: 0; transform: scale(1.2); }
-  .checkbox-row label { margin: 0; text-transform: none; letter-spacing: 0; font-size: 13px; cursor: pointer; }
-
-  button.primary {
-    background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
-    border: none; padding: 11px; border-radius: 8px; font-weight: 600;
-    font-size: 14px; cursor: pointer; transition: transform .15s, opacity .15s;
-  }
-  button.primary:hover:not(:disabled) { transform: translateY(-1px); }
-  button.primary:disabled { opacity: .5; cursor: not-allowed; }
-  button.ghost {
-    background: #fff; color: #4a5568; border: 1px solid #cbd5e0;
-    padding: 9px; border-radius: 8px; font-size: 13px; cursor: pointer;
-  }
-  button.ghost:hover { background: #f7fafc; }
-
-  /* Card PDF Unito */
-  .merged-card {
-    margin-top: 16px; padding: 14px 16px;
-    background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
-    border: 1px solid #48bb78; border-radius: 10px;
-    display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  }
-  .merged-card .title { font-weight: 600; color: #22543d; font-size: 14px; }
-  .merged-card .sub { font-size: 12px; color: #2f855a; margin-top: 2px; }
-  .merged-card button {
-    background: #38a169; color: #fff; border: none; padding: 9px 16px;
-    border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; flex-shrink: 0;
-  }
-
-  /* Lista File */
-  .file-list { margin-top: 20px; max-height: 500px; overflow-y: auto; }
-  .file-item {
-    display: flex; gap: 12px; align-items: flex-start;
-    padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px;
-    margin-bottom: 10px; background: #fff;
-  }
-  .file-icon {
-    width: 44px; height: 44px; flex-shrink: 0; display: flex;
-    align-items: center; justify-content: center;
-    background: #edf2f7; border-radius: 8px;
-    font-weight: 700; font-size: 11px; color: #4a5568;
-  }
-  .file-info { flex: 1; min-width: 0; }
-  .file-name {
-    font-weight: 600; font-size: 14px; color: #2d3748;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .file-meta { font-size: 12px; color: #718096; margin-top: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  
-  .remove-btn {
-    background: #fed7d7; color: #c53030; border: none; width: 30px; height: 30px;
-    border-radius: 50%; cursor: pointer; font-size: 18px; flex-shrink: 0;
-  }
-
-  .bulk { margin-top: 16px; display: flex; justify-content: flex-end; }
-  .bulk button {
-    background: #2d3748; color: #fff; border: none; padding: 12px 22px;
-    border-radius: 8px; font-weight: 600; cursor: pointer;
-  }
-
-  .status { margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 13px; }
-  .status.info { background: #bee3f8; color: #2c5282; }
-  .status.success { background: #c6f6d5; color: #22543d; }
-  .status.error { background: #fed7d7; color: #742a2a; }
-
-  /* Utility per nascondere gli elementi in modo sicuro */
-  .hidden { display: none !important; }
+body{margin:0;background:#F4EFE6}
+html{scroll-behavior:smooth}
+a{color:#8E5410}a:hover{color:#6B3E0B}
+a:focus-visible{outline:3px solid #E0A245;outline-offset:3px}
 </style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CafeOrCoffeeShop","name":"Book cafè Quattromiglia","telephone":"+39 0984 186 9466","address":{"@type":"PostalAddress","streetAddress":"Via G. Marconi, 28","postalCode":"87036","addressLocality":"Rende","addressRegion":"CS","addressCountry":"IT"},"geo":{"@type":"GeoCoordinates","latitude":39.3543412,"longitude":16.2413201},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"06:00","closes":"02:00"}]}
+</script>
 </head>
 <body>
-<div class="app">
-  <header>
-    <h1>🔄 Convertitore File <span class="badge">Test PDF</span></h1>
-    <p class="subtitle">Elaborazione locale. Carica JPG o PNG per convertirli in PDF.</p>
-  </header>
+<div style="width: 100%; background: #F4EFE6; color: #1B2E26; font-family: Inter, system-ui, sans-serif; font-size: 17px; line-height: 1.6">
 
-  <div class="drop-zone" id="dropZone">
-    <div class="icon">📂</div>
-    <p><strong>Clicca</strong> o <strong>trascina</strong> i file qui</p>
-    <p class="hint">JPG · PNG · WEBP</p>
-    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp" multiple>
-  </div>
+<header style="border-bottom: 1px solid #DDD3C2; background: #F4EFE6">
+<nav aria-label="Principale" style="max-width: 1200px; margin: 0 auto; padding: 18px clamp(20px, 5vw, 64px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+<a href="#top" style="display: flex; align-items: baseline; gap: 8px; text-decoration: none; color: #1B2E26">
+<span style="font-family: Fraunces, Georgia, serif; font-size: 26px; font-weight: 600; letter-spacing: -0.01em">Book cafè</span>
+<span style="font-size: 13px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #4A5A52">Quattromiglia</span>
+</a>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; font-size: 15px; font-weight: 500">
+<a href="#locale" style="color: #1B2E26; text-decoration: none; padding: 10px 0">Il locale</a>
+<a href="#giornata" style="color: #1B2E26; text-decoration: none; padding: 10px 0">La giornata</a>
+<a href="#orari" style="color: #1B2E26; text-decoration: none; padding: 10px 0">Orari</a>
+<a href="#dove" style="color: #1B2E26; text-decoration: none; padding: 10px 0">Dove siamo</a>
+<a href="tel:+3909841869466" style="background: #18332A; color: #F4EFE6; text-decoration: none; padding: 11px 20px; border-radius: 999px; font-weight: 600">Chiama</a>
+</div>
+</nav>
+</header>
 
-  <!-- Pannello Impostazioni: Inizialmente nascosto con classe .hidden -->
-  <div class="settings hidden" id="settingsPanel">
-    <div class="setting">
-      <label>Converti in</label>
-      <select id="targetFormat">
-        <option value="pdf">PDF</option>
-      </select>
-    </div>
-    <div class="setting">
-      <label>Qualità <span class="val" id="qualityVal">85%</span></label>
-      <input type="range" id="quality" min="10" max="100" value="85" step="5">
-    </div>
-    <div class="setting">
-      <label>Opzioni PDF</label>
-      <div class="checkbox-row">
-        <input type="checkbox" id="mergePdf">
-        <label for="mergePdf">Unisci in un unico PDF</label>
-      </div>
-    </div>
-    <div class="setting actions">
-      <button class="primary" id="convertBtn">▶ Converti tutto</button>
-      <button class="ghost" id="clearBtn">🗑 Svuota</button>
-    </div>
-  </div>
+<main id="top">
 
-  <!-- Card verde: Inizialmente nascosta -->
-  <div class="merged-card hidden" id="mergedCard">
-    <div>
-      <div class="title" id="mergedTitle">PDF unito pronto</div>
-      <div class="sub" id="mergedSub"></div>
-    </div>
-    <button id="downloadMergedBtn">⬇ Scarica PDF</button>
-  </div>
-
-  <div class="file-list" id="fileList"></div>
-
-  <!-- Pulsante ZIP: Inizialmente nascosto -->
-  <div class="bulk hidden" id="bulkActions">
-    <button id="downloadZipBtn">📦 Scarica tutto come ZIP</button>
-  </div>
-
-  <div class="status hidden" id="statusBar"></div>
+<section aria-labelledby="hero-title" style="max-width: 1200px; margin: 0 auto; padding: clamp(48px, 7vw, 96px) clamp(20px, 5vw, 64px); display: flex; flex-wrap: wrap; align-items: center; gap: 56px">
+<div style="flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 28px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #8E5410">Bar · Book café · Quattromiglia di Rende</p>
+<h1 id="hero-title" style="margin: 0; font-family: Fraunces, Georgia, serif; font-weight: 400; font-size: clamp(44px, 6vw, 76px); line-height: 1.04; letter-spacing: -0.02em">Un caffè, un libro e <em style="font-style: italic; color: #8E5410">tutto il tempo</em> che vuoi.</h1>
+<p style="margin: 0; max-width: 520px; font-size: 19px; color: #3E4F47">Il book café torna a Quattromiglia: un posto moderno, pulito e accogliente nel cuore del quartiere, dove fermarsi per una colazione, una pausa o due pagine prima di sera.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<a href="tel:+3909841869466" style="display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 26px; border-radius: 999px; background: #18332A; color: #F4EFE6; text-decoration: none; font-weight: 600">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"></path></svg>
+0984 186 9466</a>
+<a href="https://www.google.com/maps/dir/?api=1&amp;destination=Book+caf%C3%A8+Quattromiglia&amp;destination_place_id=ChIJH_KBX3KZPxMRV7FgfDZezpM" style="display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 26px; border-radius: 999px; border: 1.5px solid #18332A; color: #18332A; text-decoration: none; font-weight: 600">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+Indicazioni stradali</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; font-size: 15px; color: #3E4F47">
+<span style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: #E8E0D1; font-weight: 600; color: #1B2E26"><span aria-hidden="true" style="width: 9px; height: 9px; border-radius: 50%; background: #2E7D4F" id="status-dot"></span><span id="status-text">Aperto ora · fino alle 2:00</span></span>
+<span>Tutti i giorni, 6:00 – 2:00</span>
+</div>
 </div>
 
+<div aria-hidden="true" style="flex: 1 1 420px; min-width: 0; background: #18332A; border-radius: 28px; padding: 48px 40px 40px; height: 520px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: 0">
+<div style="display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 380px">
+<div style="width: 46px; height: 300px; background: #E0A245; border-radius: 3px 3px 0 0; display: flex; align-items: center; justify-content: center"><span style="writing-mode: vertical-rl; transform: rotate(180deg); font-family: Fraunces, Georgia, serif; font-size: 18px; color: #18332A; letter-spacing: 0.04em">Book cafè</span></div>
+<div style="width: 34px; height: 250px; background: #F4EFE6; border-radius: 3px 3px 0 0"></div>
+<div style="width: 52px; height: 330px; background: #8FB3A0; border-radius: 3px 3px 0 0; display: flex; align-items: center; justify-content: center"><span style="writing-mode: vertical-rl; transform: rotate(180deg); font-size: 13px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #18332A">Quattromiglia</span></div>
+<div style="width: 28px; height: 220px; background: #C9563C; border-radius: 3px 3px 0 0"></div>
+<div style="width: 44px; height: 280px; background: #D9CBB3; border-radius: 3px 3px 0 0; display: flex; align-items: center; justify-content: center"><span style="writing-mode: vertical-rl; transform: rotate(180deg); font-family: Fraunces, Georgia, serif; font-style: italic; font-size: 17px; color: #18332A">dalle 6 alle 2</span></div>
+<div style="width: 30px; height: 310px; background: #2E5A48; border-radius: 3px 3px 0 0; border: 1px solid #3F6F5B"></div>
+<div style="width: 40px; height: 200px; background: #E0A245; border-radius: 3px 3px 0 0; transform: rotate(-9deg); transform-origin: bottom left; margin-left: 4px"></div>
+<div style="width: 70px; height: 70px; margin-left: 18px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end">
+<div style="width: 56px; height: 46px; background: #F4EFE6; border-radius: 4px 4px 22px 22px; position: relative"><div style="position: absolute; right: -14px; top: 9px; width: 14px; height: 20px; border: 4px solid #F4EFE6; border-left: none; border-radius: 0 12px 12px 0"></div></div>
+</div>
+</div>
+<div style="height: 14px; background: #0F2219; border-radius: 4px"></div>
+<p style="margin: 20px 0 0; text-align: center; font-family: Fraunces, Georgia, serif; font-style: italic; font-size: 20px; color: #E6DCC9">Via Marconi, 28 — Quattromiglia</p>
+</div>
+</section>
+
+<section id="locale" aria-labelledby="locale-title" style="background: #EDE6D9; border-top: 1px solid #DDD3C2; border-bottom: 1px solid #DDD3C2">
+<div style="max-width: 1200px; margin: 0 auto; padding: clamp(56px, 8vw, 104px) clamp(20px, 5vw, 64px); display: flex; flex-direction: column; gap: 48px">
+<div style="display: flex; flex-wrap: wrap; gap: 32px 64px; align-items: flex-end">
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #8E5410">Il locale</p>
+<h2 id="locale-title" style="margin: 0; font-family: Fraunces, Georgia, serif; font-weight: 400; font-size: clamp(34px, 4.4vw, 52px); line-height: 1.1; letter-spacing: -0.015em">Il book café, in versione moderna.</h2>
+</div>
+<p style="flex: 1 1 380px; min-width: 0; margin: 0; color: #3E4F47">Per chi aveva nostalgia del book café, ora c'è un indirizzo nuovo e più centrale, in Via Marconi. Un bar dove il caffè si beve con calma, lo scaffale è a portata di mano e ci si sente a casa dalla prima volta.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px">
+<div style="background: #F4EFE6; border-radius: 20px; padding: 32px; display: flex; flex-direction: column; gap: 14px">
+<svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8E5410" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6l-5 3.6 1.9-5.8L4 8.8h6.1z"></path></svg>
+<h3 style="margin: 0; font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px">Pulito e curato</h3>
+<p style="margin: 0; color: #3E4F47">Un ambiente ordinato e rilassante, pensato per starci bene: da soli con un libro o in compagnia.</p>
+</div>
+<div style="background: #F4EFE6; border-radius: 20px; padding: 32px; display: flex; flex-direction: column; gap: 14px">
+<svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8E5410" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"></path><path d="M6 2v3M10 2v3M14 2v3"></path></svg>
+<h3 style="margin: 0; font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px">Accoglienza cordiale</h3>
+<p style="margin: 0; color: #3E4F47">Ti serviamo con un sorriso, che sia il caffè delle 6 o l'ultimo bicchiere della sera.</p>
+</div>
+<div style="background: #F4EFE6; border-radius: 20px; padding: 32px; display: flex; flex-direction: column; gap: 14px">
+<svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8E5410" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"></path><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"></path></svg>
+<h3 style="margin: 0; font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px">Buon cibo, prezzi onesti</h3>
+<p style="margin: 0; color: #3E4F47">Bar e cucina di qualità, con un conto che non riserva sorprese.</p>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px">
+<div role="img" aria-label="Spazio per una foto dell'interno del locale" style="min-height: 320px; border-radius: 20px; border: 2px dashed #B9AC95; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: #4A5A52; font-size: 15px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase">[Foto: interno con libreria]</div>
+<div role="img" aria-label="Spazio per una foto del bancone o dei prodotti" style="min-height: 320px; border-radius: 20px; border: 2px dashed #B9AC95; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: #4A5A52; font-size: 15px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase">[Foto: bancone e colazione]</div>
+</div>
+</div>
+</section>
+
+<section id="giornata" aria-labelledby="giornata-title" style="background: #18332A; color: #F4EFE6">
+<div style="max-width: 1200px; margin: 0 auto; padding: clamp(56px, 8vw, 104px) clamp(20px, 5vw, 64px); display: flex; flex-direction: column; gap: 48px">
+<div style="display: flex; flex-direction: column; gap: 16px; max-width: 720px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #E0A245">La giornata</p>
+<h2 id="giornata-title" style="margin: 0; font-family: Fraunces, Georgia, serif; font-weight: 400; font-size: clamp(34px, 4.4vw, 52px); line-height: 1.1; letter-spacing: -0.015em">Dalle 6 del mattino alle 2 di notte, sempre aperti.</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1px; background: #2E5A48; border-radius: 20px; overflow: hidden">
+<div style="background: #18332A; padding: 36px 32px; display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: Fraunces, Georgia, serif; font-size: 44px; line-height: 1; color: #E0A245">06:00</span>
+<h3 style="margin: 0; font-size: 20px; font-weight: 600">Colazione</h3>
+<p style="margin: 0; color: #D3CDBF">Si parte presto: caffè e colazione prima del lavoro, delle lezioni o di una passeggiata in quartiere.</p>
+</div>
+<div style="background: #18332A; padding: 36px 32px; display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: Fraunces, Georgia, serif; font-size: 44px; line-height: 1; color: #E0A245">Giorno</span>
+<h3 style="margin: 0; font-size: 20px; font-weight: 600">Pausa e lettura</h3>
+<p style="margin: 0; color: #D3CDBF">Un tavolo tranquillo per leggere, studiare, lavorare o fare due chiacchiere davanti a qualcosa di buono.</p>
+</div>
+<div style="background: #18332A; padding: 36px 32px; display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: Fraunces, Georgia, serif; font-size: 44px; line-height: 1; color: #E0A245">02:00</span>
+<h3 style="margin: 0; font-size: 20px; font-weight: 600">Fino a tardi</h3>
+<p style="margin: 0; color: #D3CDBF">La sera restiamo aperti fino alle 2: il posto giusto per chiudere la giornata in compagnia.</p>
+</div>
+</div>
+<div style="border: 2px dashed #4F7A68; border-radius: 20px; padding: 28px 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+<p style="margin: 0; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 15px; color: #D3CDBF">[Il nostro menu: prodotti e prezzi]</p>
+<a href="tel:+3909841869466" style="color: #E0A245; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; padding: 10px 0">Chiedi cosa c'è oggi</a>
+</div>
+</div>
+</section>
+
+<section aria-label="Orari e dove siamo" style="max-width: 1200px; margin: 0 auto; padding: clamp(56px, 8vw, 104px) clamp(20px, 5vw, 64px); display: flex; flex-wrap: wrap; gap: 32px">
+<div id="orari" style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #8E5410">Orari</p>
+<h2 style="margin: 0; font-family: Fraunces, Georgia, serif; font-weight: 400; font-size: clamp(32px, 4vw, 44px); line-height: 1.1">Aperti 7 giorni su 7</h2>
+<dl style="margin: 0; display: flex; flex-direction: column; border-top: 1px solid #DDD3C2">
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid #DDD3C2"><dt style="font-weight: 500">Lunedì</dt><dd style="margin: 0; font-variant-numeric: tabular-nums">06:00 – 02:00</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid #DDD3C2"><dt style="font-weight: 500">Martedì</dt><dd style="margin: 0; font-variant-numeric: tabular-nums">06:00 – 02:00</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid #DDD3C2"><dt style="font-weight: 500">Mercoledì</dt><dd style="margin: 0; font-variant-numeric: tabular-nums">06:00 – 02:00</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid #DDD3C2"><dt style="font-weight: 500">Giovedì</dt><dd style="margin: 0; font-variant-numeric: tabular-nums">06:00 – 02:00</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid #DDD3C2"><dt style="font-weight: 500">Venerdì</dt><dd style="margin: 0; font-variant-numeric: tabular-nums">06:00 – 02:00</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid #DDD3C2"><dt style="font-weight: 500">Sabato</dt><dd style="margin: 0; font-variant-numeric: tabular-nums">06:00 – 02:00</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid #DDD3C2"><dt style="font-weight: 500">Domenica</dt><dd style="margin: 0; font-variant-numeric: tabular-nums">06:00 – 02:00</dd></div>
+</dl>
+</div>
+
+<div id="dove" style="flex: 1 1 400px; min-width: 0; background: #18332A; color: #F4EFE6; border-radius: 28px; padding: clamp(28px, 4vw, 48px); display: flex; flex-direction: column; gap: 24px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #E0A245">Dove siamo</p>
+<h2 style="margin: 0; font-family: Fraunces, Georgia, serif; font-weight: 400; font-size: clamp(32px, 4vw, 44px); line-height: 1.1">Nel cuore di Quattromiglia</h2>
+<address style="font-style: normal; display: flex; flex-direction: column; gap: 18px; font-size: 18px">
+<div style="display: flex; gap: 14px; align-items: flex-start">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E0A245" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 3px"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+<span>Via G. Marconi, 28<br>87036 Quattromiglia di Rende (CS)</span>
+</div>
+<div style="display: flex; gap: 14px; align-items: center">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E0A245" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"></path></svg>
+<a href="tel:+3909841869466" style="color: #F4EFE6; text-decoration: none; padding: 8px 0">0984 186 9466</a>
+</div>
+</address>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: auto">
+<a href="https://www.google.com/maps/dir/?api=1&amp;destination=Book+caf%C3%A8+Quattromiglia&amp;destination_place_id=ChIJH_KBX3KZPxMRV7FgfDZezpM" style="display: inline-flex; align-items: center; min-height: 52px; padding: 0 24px; border-radius: 999px; background: #E0A245; color: #18332A; text-decoration: none; font-weight: 600">Portami lì</a>
+<a href="https://www.google.com/maps/search/?api=1&amp;query=Book+caf%C3%A8+Quattromiglia&amp;query_place_id=ChIJH_KBX3KZPxMRV7FgfDZezpM" style="display: inline-flex; align-items: center; min-height: 52px; padding: 0 24px; border-radius: 999px; border: 1.5px solid #F4EFE6; color: #F4EFE6; text-decoration: none; font-weight: 600">Apri in Google Maps</a>
+</div>
+</div>
+</section>
+
+</main>
+
+<footer style="border-top: 1px solid #DDD3C2; background: #EDE6D9">
+<div style="max-width: 1200px; margin: 0 auto; padding: 40px clamp(20px, 5vw, 64px); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; font-size: 15px; color: #3E4F47">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: Fraunces, Georgia, serif; font-size: 22px; font-weight: 600; color: #1B2E26">Book cafè Quattromiglia</span>
+<span>Via G. Marconi, 28 · 87036 Rende (CS) · <a href="tel:+3909841869466">0984 186 9466</a></span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+<span>[Instagram / Facebook]</span>
+<span>P.IVA [NUMERO] · © 2026</span>
+</div>
+</div>
+</footer>
+
+</div>
 <script>
-// Inizializzazione jsPDF
-const { jsPDF } = window.jspdf;
-
-// Stato dell'app
-const state = {
-  files: [],
-  processing: false,
-  mergedResult: null
-};
-
-// Elementi DOM
-const els = {
-  dropZone: document.getElementById('dropZone'),
-  fileInput: document.getElementById('fileInput'),
-  settingsPanel: document.getElementById('settingsPanel'),
-  targetFormat: document.getElementById('targetFormat'),
-  quality: document.getElementById('quality'),
-  qualityVal: document.getElementById('qualityVal'),
-  mergePdf: document.getElementById('mergePdf'),
-  convertBtn: document.getElementById('convertBtn'),
-  clearBtn: document.getElementById('clearBtn'),
-  mergedCard: document.getElementById('mergedCard'),
-  mergedTitle: document.getElementById('mergedTitle'),
-  mergedSub: document.getElementById('mergedSub'),
-  downloadMergedBtn: document.getElementById('downloadMergedBtn'),
-  fileList: document.getElementById('fileList'),
-  bulkActions: document.getElementById('bulkActions'),
-  downloadZipBtn: document.getElementById('downloadZipBtn'),
-  statusBar: document.getElementById('statusBar')
-};
-
-// Utility
-function formatBytes(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-  return (b/1048576).toFixed(2) + ' MB';
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function showStatus(msg, type) {
-  els.statusBar.textContent = msg;
-  els.statusBar.className = 'status ' + type;
-  els.statusBar.classList.remove('hidden');
-}
-
-function hideStatus() {
-  els.statusBar.classList.add('hidden');
-}
-
-function loadImage(url) {
-  return new Promise((res, rej) => {
-    const img = new Image();
-    img.onload = () => res(img);
-    img.onerror = rej;
-    img.src = url;
-  });
-}
-
-// Gestione File
-function addFiles(fileList) {
-  let addedCount = 0;
-  for (const file of Array.from(fileList)) {
-    if (file.type.startsWith('image/')) {
-      state.files.push({
-        id: crypto.randomUUID(),
-        file: file,
-        status: 'pending',
-        results: [],
-        error: null
-      });
-      addedCount++;
-    }
+(function(){
+  var h;
+  try { h = parseInt(new Intl.DateTimeFormat('it-IT',{timeZone:'Europe/Rome',hour:'numeric',hourCycle:'h23'}).format(new Date()),10); }
+  catch(e) { h = new Date().getHours(); }
+  if (!(h >= 6 || h < 2)) {
+    document.getElementById('status-text').textContent = 'Chiuso · riapre alle 6:00';
+    document.getElementById('status-dot').style.background = '#B3261E';
   }
-
-  if (addedCount === 0) {
-    showStatus('Nessuna immagine valida selezionata (JPG, PNG, WEBP).', 'error');
-    return;
-  }
-
-  hideStatus();
-  refreshUI();
-}
-
-function removeFile(id) {
-  state.files = state.files.filter(f => f.id !== id);
-  if (state.files.length === 0) {
-    state.mergedResult = null;
-  }
-  refreshUI();
-}
-
-function clearAll() {
-  state.files = [];
-  state.mergedResult = null;
-  refreshUI();
-  hideStatus();
-}
-
-// Conversione
-async function convertAll() {
-  if (state.files.length === 0) return;
-
-  state.processing = true;
-  state.mergedResult = null;
-  state.files.forEach(f => { f.status = 'pending'; f.results = []; f.error = null; });
-  refreshUI();
-
-  const quality = parseInt(els.quality.value) / 100;
-  const mergeOn = els.mergePdf.checked;
-
-  try {
-    if (mergeOn) {
-      showStatus('Creazione PDF unito…', 'info');
-      const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
-      const pw = pdf.internal.pageSize.getWidth();
-      const ph = pdf.internal.pageSize.getHeight();
-      let firstFile = true;
-
-      for (const f of state.files) {
-        if (!firstFile) pdf.addPage();
-        firstFile = false;
-        
-        f.status = 'converting';
-        renderList();
-
-        const url = URL.createObjectURL(f.file);
-        try {
-          const img = await loadImage(url);
-          const margin = 10;
-          const scale = Math.min((pw - margin*2) / img.naturalWidth, (ph - margin*2) / img.naturalHeight);
-          const w = img.naturalWidth * scale;
-          const h = img.naturalHeight * scale;
-          
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          canvas.getContext('2d').drawImage(img, 0, 0);
-          
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          pdf.addImage(dataUrl, 'JPEG', (pw-w)/2, (ph-h)/2, w, h);
-          f.status = 'done';
-        } finally {
-          URL.revokeObjectURL(url);
-        }
-        renderList();
-      }
-
-      const ts = new Date().toISOString().slice(0,16).replace(/[:T]/g, '-');
-      state.mergedResult = { blob: pdf.output('blob'), name: `unito-${ts}.pdf` };
-      showStatus(`✅ PDF unito generato (${formatBytes(state.mergedResult.blob.size)}).`, 'success');
-
-    } else {
-      // Conversione singola
-      for (const f of state.files) {
-        f.status = 'converting';
-        renderList();
-
-        const url = URL.createObjectURL(f.file);
-        try {
-          const img = await loadImage(url);
-          const orientation = img.naturalWidth > img.naturalHeight ? 'l' : 'p';
-          const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
-          const pw = pdf.internal.pageSize.getWidth();
-          const ph = pdf.internal.pageSize.getHeight();
-          const margin = 10;
-          const scale = Math.min((pw-margin*2)/img.naturalWidth, (ph-margin*2)/img.naturalHeight);
-          const w = img.naturalWidth * scale;
-          const h = img.naturalHeight * scale;
-          
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          canvas.getContext('2d').drawImage(img, 0, 0);
-          
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          pdf.addImage(dataUrl, 'JPEG', (pw-w)/2, (ph-h)/2, w, h);
-          
-          f.results = [{ blob: pdf.output('blob'), name: f.file.name.replace(/\.[^.]+$/, '') + '.pdf' }];
-          f.status = 'done';
-        } catch (err) {
-          console.error(err);
-          f.error = err.message;
-          f.status = 'error';
-        } finally {
-          URL.revokeObjectURL(url);
-        }
-        renderList();
-      }
-      showStatus('✅ Conversione completata.', 'success');
-    }
-  } catch (err) {
-    console.error(err);
-    showStatus('Errore: ' + err.message, 'error');
-  } finally {
-    state.processing = false;
-    refreshUI();
-  }
-}
-
-// Download
-function downloadResult(fileId, idx) {
-  const f = state.files.find(x => x.id === fileId);
-  if (!f) return;
-  const blob = f.results[idx].blob;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = f.results[idx].name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function downloadMerged() {
-  if (!state.mergedResult) return;
-  const url = URL.createObjectURL(state.mergedResult.blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = state.mergedResult.name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-async function downloadZip() {
-  const zip = new JSZip();
-  const used = new Set();
-  state.files.forEach(f => {
-    f.results.forEach(r => {
-      let name = r.name, i = 1;
-      while (used.has(name)) {
-        const dot = r.name.lastIndexOf('.');
-        name = r.name.slice(0, dot) + '-' + i + r.name.slice(dot);
-        i++;
-      }
-      used.add(name);
-      zip.file(name, r.blob);
-    });
-  });
-  const blob = await zip.generateAsync({ type: 'blob' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'conversioni.zip';
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-// Rendering UI
-function renderList() {
-  els.fileList.innerHTML = '';
-  state.files.forEach(f => {
-    let badge = '';
-    if (f.status === 'pending')    badge = '<span style="background:#e2e8f0;color:#4a5568;padding:2px 6px;border-radius:4px;font-size:11px;">In attesa</span>';
-    if (f.status === 'converting') badge = '<span style="background:#bee3f8;color:#2c5282;padding:2px 6px;border-radius:4px;font-size:11px;">Conversione…</span>';
-    if (f.status === 'done')       badge = '<span style="background:#c6f6d5;color:#22543d;padding:2px 6px;border-radius:4px;font-size:11px;">Pronto</span>';
-    if (f.status === 'error')      badge = '<span style="background:#fed7d7;color:#742a2a;padding:2px 6px;border-radius:4px;font-size:11px;">Errore</span>';
-
-    const resultsHtml = f.results.length ? `<div class="results" style="margin-top:8px;">
-      ${f.results.map((r, i) => `<div style="display:flex;justify-content:space-between;align-items:center;background:#f7fafc;padding:8px;border-radius:6px;margin-top:6px;">
-        <span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.name)} · ${formatBytes(r.blob.size)}</span>
-        <button data-file="${f.id}" data-idx="${i}" style="background:#667eea;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:12px;cursor:pointer;margin-left:10px;">⬇ Scarica</button>
-      </div>`).join('')}</div>` : '';
-
-    const el = document.createElement('div');
-    el.className = 'file-item';
-    el.innerHTML = `
-      <div class="file-icon">IMG</div>
-      <div class="file-info">
-        <div class="file-name" title="${escapeHtml(f.file.name)}">${escapeHtml(f.file.name)}</div>
-        <div class="file-meta">${formatBytes(f.file.size)} ${badge}</div>
-        ${resultsHtml}
-      </div>
-      <button class="remove-btn" data-remove="${f.id}" title="Rimuovi">×</button>
-    `;
-    els.fileList.appendChild(el);
-  });
-
-  els.fileList.querySelectorAll('button[data-file]').forEach(b => {
-    b.onclick = () => downloadResult(b.dataset.file, parseInt(b.dataset.idx));
-  });
-  els.fileList.querySelectorAll('button[data-remove]').forEach(b => {
-    b.onclick = () => removeFile(b.dataset.remove);
-  });
-}
-
-function refreshUI() {
-  const hasFiles = state.files.length > 0;
-  
-  // Mostra/nascondi pannello e pulsanti in base ai file
-  if (hasFiles) {
-    els.settingsPanel.classList.remove('hidden');
-  } else {
-    els.settingsPanel.classList.add('hidden');
-  }
-
-  if (state.mergedResult) {
-    els.mergedCard.classList.remove('hidden');
-    els.mergedTitle.textContent = state.mergedResult.name;
-    els.mergedSub.textContent = `PDF unito · ${formatBytes(state.mergedResult.blob.size)}`;
-  } else {
-    els.mergedCard.classList.add('hidden');
-  }
-
-  renderList();
-
-  const anyResults = state.files.some(f => f.results.length > 0);
-  if (anyResults) {
-    els.bulkActions.classList.remove('hidden');
-  } else {
-    els.bulkActions.classList.add('hidden');
-  }
-
-  els.convertBtn.disabled = state.processing || !hasFiles;
-}
-
-// Event Listeners
-els.dropZone.addEventListener('click', () => els.fileInput.click());
-els.dropZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  els.dropZone.classList.add('dragover');
-});
-els.dropZone.addEventListener('dragleave', () => els.dropZone.classList.remove('dragover'));
-els.dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  els.dropZone.classList.remove('dragover');
-  addFiles(e.dataTransfer.files);
-});
-els.fileInput.addEventListener('change', e => {
-  addFiles(e.target.files);
-  e.target.value = '';
-});
-
-els.quality.addEventListener('input', e => {
-  els.qualityVal.textContent = e.target.value + '%';
-});
-
-els.convertBtn.addEventListener('click', convertAll);
-els.clearBtn.addEventListener('click', clearAll);
-els.downloadZipBtn.addEventListener('click', downloadZip);
-els.downloadMergedBtn.addEventListener('click', downloadMerged);
+})();
 </script>
 </body>
 </html>
