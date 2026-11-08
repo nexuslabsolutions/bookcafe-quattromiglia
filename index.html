@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convertitore File — Test PDF</title>
+<!-- Librerie necessarie -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh; padding: 20px; color: #1a202c;
+  }
+  .app {
+    max-width: 900px; margin: 0 auto; background: #fff;
+    border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.3); padding: 28px;
+  }
+  header { margin-bottom: 22px; }
+  h1 { font-size: 22px; color: #2d3748; display: flex; align-items: center; gap: 10px; }
+  .badge { background: #edf2f7; color: #4a5568; font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
+  .subtitle { color: #718096; font-size: 13px; margin-top: 4px; }
+
+  .drop-zone {
+    border: 3px dashed #cbd5e0; border-radius: 12px; padding: 32px 20px;
+    text-align: center; cursor: pointer; transition: all .2s; background: #f7fafc;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #667eea; background: #edf2f7; }
+  .drop-zone .icon { font-size: 40px; }
+  .drop-zone p { color: #4a5568; margin: 6px 0; }
+  .drop-zone .hint { font-size: 12px; color: #a0aec0; }
+  input[type="file"] { display: none; }
+
+  /* Pannello Impostazioni */
+  .settings {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px; margin-top: 18px; padding: 18px;
+    background: #f7fafc; border-radius: 12px;
+  }
+  .setting label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: #4a5568; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .3px;
+  }
+  .setting select, .setting input[type="range"] {
+    width: 100%; padding: 8px; border: 1px solid #cbd5e0;
+    border-radius: 6px; font-size: 14px; background: #fff;
+  }
+  .setting input[type="range"] { padding: 0; }
+  .setting .val { color: #667eea; font-weight: 700; margin-left: 4px; }
+  .setting.actions { display: flex; gap: 8px; flex-direction: column; justify-content: flex-end; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+  .checkbox-row input[type="checkbox"] { width: auto; margin: 0; transform: scale(1.2); }
+  .checkbox-row label { margin: 0; text-transform: none; letter-spacing: 0; font-size: 13px; cursor: pointer; }
+
+  button.primary {
+    background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+    border: none; padding: 11px; border-radius: 8px; font-weight: 600;
+    font-size: 14px; cursor: pointer; transition: transform .15s, opacity .15s;
+  }
+  button.primary:hover:not(:disabled) { transform: translateY(-1px); }
+  button.primary:disabled { opacity: .5; cursor: not-allowed; }
+  button.ghost {
+    background: #fff; color: #4a5568; border: 1px solid #cbd5e0;
+    padding: 9px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  }
+  button.ghost:hover { background: #f7fafc; }
+
+  /* Card PDF Unito */
+  .merged-card {
+    margin-top: 16px; padding: 14px 16px;
+    background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+    border: 1px solid #48bb78; border-radius: 10px;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .merged-card .title { font-weight: 600; color: #22543d; font-size: 14px; }
+  .merged-card .sub { font-size: 12px; color: #2f855a; margin-top: 2px; }
+  .merged-card button {
+    background: #38a169; color: #fff; border: none; padding: 9px 16px;
+    border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; flex-shrink: 0;
+  }
+
+  /* Lista File */
+  .file-list { margin-top: 20px; max-height: 500px; overflow-y: auto; }
+  .file-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px;
+    margin-bottom: 10px; background: #fff;
+  }
+  .file-icon {
+    width: 44px; height: 44px; flex-shrink: 0; display: flex;
+    align-items: center; justify-content: center;
+    background: #edf2f7; border-radius: 8px;
+    font-weight: 700; font-size: 11px; color: #4a5568;
+  }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name {
+    font-weight: 600; font-size: 14px; color: #2d3748;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .file-meta { font-size: 12px; color: #718096; margin-top: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  
+  .remove-btn {
+    background: #fed7d7; color: #c53030; border: none; width: 30px; height: 30px;
+    border-radius: 50%; cursor: pointer; font-size: 18px; flex-shrink: 0;
+  }
+
+  .bulk { margin-top: 16px; display: flex; justify-content: flex-end; }
+  .bulk button {
+    background: #2d3748; color: #fff; border: none; padding: 12px 22px;
+    border-radius: 8px; font-weight: 600; cursor: pointer;
+  }
+
+  .status { margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 13px; }
+  .status.info { background: #bee3f8; color: #2c5282; }
+  .status.success { background: #c6f6d5; color: #22543d; }
+  .status.error { background: #fed7d7; color: #742a2a; }
+
+  /* Utility per nascondere gli elementi in modo sicuro */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🔄 Convertitore File <span class="badge">Test PDF</span></h1>
+    <p class="subtitle">Elaborazione locale. Carica JPG o PNG per convertirli in PDF.</p>
+  </header>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="icon">📂</div>
+    <p><strong>Clicca</strong> o <strong>trascina</strong> i file qui</p>
+    <p class="hint">JPG · PNG · WEBP</p>
+    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp" multiple>
+  </div>
+
+  <!-- Pannello Impostazioni: Inizialmente nascosto con classe .hidden -->
+  <div class="settings hidden" id="settingsPanel">
+    <div class="setting">
+      <label>Converti in</label>
+      <select id="targetFormat">
+        <option value="pdf">PDF</option>
+      </select>
+    </div>
+    <div class="setting">
+      <label>Qualità <span class="val" id="qualityVal">85%</span></label>
+      <input type="range" id="quality" min="10" max="100" value="85" step="5">
+    </div>
+    <div class="setting">
+      <label>Opzioni PDF</label>
+      <div class="checkbox-row">
+        <input type="checkbox" id="mergePdf">
+        <label for="mergePdf">Unisci in un unico PDF</label>
+      </div>
+    </div>
+    <div class="setting actions">
+      <button class="primary" id="convertBtn">▶ Converti tutto</button>
+      <button class="ghost" id="clearBtn">🗑 Svuota</button>
+    </div>
+  </div>
+
+  <!-- Card verde: Inizialmente nascosta -->
+  <div class="merged-card hidden" id="mergedCard">
+    <div>
+      <div class="title" id="mergedTitle">PDF unito pronto</div>
+      <div class="sub" id="mergedSub"></div>
+    </div>
+    <button id="downloadMergedBtn">⬇ Scarica PDF</button>
+  </div>
+
+  <div class="file-list" id="fileList"></div>
+
+  <!-- Pulsante ZIP: Inizialmente nascosto -->
+  <div class="bulk hidden" id="bulkActions">
+    <button id="downloadZipBtn">📦 Scarica tutto come ZIP</button>
+  </div>
+
+  <div class="status hidden" id="statusBar"></div>
+</div>
+
+<script>
+// Inizializzazione jsPDF
+const { jsPDF } = window.jspdf;
+
+// Stato dell'app
+const state = {
+  files: [],
+  processing: false,
+  mergedResult: null
+};
+
+// Elementi DOM
+const els = {
+  dropZone: document.getElementById('dropZone'),
+  fileInput: document.getElementById('fileInput'),
+  settingsPanel: document.getElementById('settingsPanel'),
+  targetFormat: document.getElementById('targetFormat'),
+  quality: document.getElementById('quality'),
+  qualityVal: document.getElementById('qualityVal'),
+  mergePdf: document.getElementById('mergePdf'),
+  convertBtn: document.getElementById('convertBtn'),
+  clearBtn: document.getElementById('clearBtn'),
+  mergedCard: document.getElementById('mergedCard'),
+  mergedTitle: document.getElementById('mergedTitle'),
+  mergedSub: document.getElementById('mergedSub'),
+  downloadMergedBtn: document.getElementById('downloadMergedBtn'),
+  fileList: document.getElementById('fileList'),
+  bulkActions: document.getElementById('bulkActions'),
+  downloadZipBtn: document.getElementById('downloadZipBtn'),
+  statusBar: document.getElementById('statusBar')
+};
+
+// Utility
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function showStatus(msg, type) {
+  els.statusBar.textContent = msg;
+  els.statusBar.className = 'status ' + type;
+  els.statusBar.classList.remove('hidden');
+}
+
+function hideStatus() {
+  els.statusBar.classList.add('hidden');
+}
+
+function loadImage(url) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = url;
+  });
+}
+
+// Gestione File
+function addFiles(fileList) {
+  let addedCount = 0;
+  for (const file of Array.from(fileList)) {
+    if (file.type.startsWith('image/')) {
+      state.files.push({
+        id: crypto.randomUUID(),
+        file: file,
+        status: 'pending',
+        results: [],
+        error: null
+      });
+      addedCount++;
+    }
+  }
+
+  if (addedCount === 0) {
+    showStatus('Nessuna immagine valida selezionata (JPG, PNG, WEBP).', 'error');
+    return;
+  }
+
+  hideStatus();
+  refreshUI();
+}
+
+function removeFile(id) {
+  state.files = state.files.filter(f => f.id !== id);
+  if (state.files.length === 0) {
+    state.mergedResult = null;
+  }
+  refreshUI();
+}
+
+function clearAll() {
+  state.files = [];
+  state.mergedResult = null;
+  refreshUI();
+  hideStatus();
+}
+
+// Conversione
+async function convertAll() {
+  if (state.files.length === 0) return;
+
+  state.processing = true;
+  state.mergedResult = null;
+  state.files.forEach(f => { f.status = 'pending'; f.results = []; f.error = null; });
+  refreshUI();
+
+  const quality = parseInt(els.quality.value) / 100;
+  const mergeOn = els.mergePdf.checked;
+
+  try {
+    if (mergeOn) {
+      showStatus('Creazione PDF unito…', 'info');
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+      const pw = pdf.internal.pageSize.getWidth();
+      const ph = pdf.internal.pageSize.getHeight();
+      let firstFile = true;
+
+      for (const f of state.files) {
+        if (!firstFile) pdf.addPage();
+        firstFile = false;
+        
+        f.status = 'converting';
+        renderList();
+
+        const url = URL.createObjectURL(f.file);
+        try {
+          const img = await loadImage(url);
+          const margin = 10;
+          const scale = Math.min((pw - margin*2) / img.naturalWidth, (ph - margin*2) / img.naturalHeight);
+          const w = img.naturalWidth * scale;
+          const h = img.naturalHeight * scale;
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          pdf.addImage(dataUrl, 'JPEG', (pw-w)/2, (ph-h)/2, w, h);
+          f.status = 'done';
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+        renderList();
+      }
+
+      const ts = new Date().toISOString().slice(0,16).replace(/[:T]/g, '-');
+      state.mergedResult = { blob: pdf.output('blob'), name: `unito-${ts}.pdf` };
+      showStatus(`✅ PDF unito generato (${formatBytes(state.mergedResult.blob.size)}).`, 'success');
+
+    } else {
+      // Conversione singola
+      for (const f of state.files) {
+        f.status = 'converting';
+        renderList();
+
+        const url = URL.createObjectURL(f.file);
+        try {
+          const img = await loadImage(url);
+          const orientation = img.naturalWidth > img.naturalHeight ? 'l' : 'p';
+          const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
+          const pw = pdf.internal.pageSize.getWidth();
+          const ph = pdf.internal.pageSize.getHeight();
+          const margin = 10;
+          const scale = Math.min((pw-margin*2)/img.naturalWidth, (ph-margin*2)/img.naturalHeight);
+          const w = img.naturalWidth * scale;
+          const h = img.naturalHeight * scale;
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          pdf.addImage(dataUrl, 'JPEG', (pw-w)/2, (ph-h)/2, w, h);
+          
+          f.results = [{ blob: pdf.output('blob'), name: f.file.name.replace(/\.[^.]+$/, '') + '.pdf' }];
+          f.status = 'done';
+        } catch (err) {
+          console.error(err);
+          f.error = err.message;
+          f.status = 'error';
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+        renderList();
+      }
+      showStatus('✅ Conversione completata.', 'success');
+    }
+  } catch (err) {
+    console.error(err);
+    showStatus('Errore: ' + err.message, 'error');
+  } finally {
+    state.processing = false;
+    refreshUI();
+  }
+}
+
+// Download
+function downloadResult(fileId, idx) {
+  const f = state.files.find(x => x.id === fileId);
+  if (!f) return;
+  const blob = f.results[idx].blob;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = f.results[idx].name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadMerged() {
+  if (!state.mergedResult) return;
+  const url = URL.createObjectURL(state.mergedResult.blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = state.mergedResult.name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function downloadZip() {
+  const zip = new JSZip();
+  const used = new Set();
+  state.files.forEach(f => {
+    f.results.forEach(r => {
+      let name = r.name, i = 1;
+      while (used.has(name)) {
+        const dot = r.name.lastIndexOf('.');
+        name = r.name.slice(0, dot) + '-' + i + r.name.slice(dot);
+        i++;
+      }
+      used.add(name);
+      zip.file(name, r.blob);
+    });
+  });
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'conversioni.zip';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Rendering UI
+function renderList() {
+  els.fileList.innerHTML = '';
+  state.files.forEach(f => {
+    let badge = '';
+    if (f.status === 'pending')    badge = '<span style="background:#e2e8f0;color:#4a5568;padding:2px 6px;border-radius:4px;font-size:11px;">In attesa</span>';
+    if (f.status === 'converting') badge = '<span style="background:#bee3f8;color:#2c5282;padding:2px 6px;border-radius:4px;font-size:11px;">Conversione…</span>';
+    if (f.status === 'done')       badge = '<span style="background:#c6f6d5;color:#22543d;padding:2px 6px;border-radius:4px;font-size:11px;">Pronto</span>';
+    if (f.status === 'error')      badge = '<span style="background:#fed7d7;color:#742a2a;padding:2px 6px;border-radius:4px;font-size:11px;">Errore</span>';
+
+    const resultsHtml = f.results.length ? `<div class="results" style="margin-top:8px;">
+      ${f.results.map((r, i) => `<div style="display:flex;justify-content:space-between;align-items:center;background:#f7fafc;padding:8px;border-radius:6px;margin-top:6px;">
+        <span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.name)} · ${formatBytes(r.blob.size)}</span>
+        <button data-file="${f.id}" data-idx="${i}" style="background:#667eea;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:12px;cursor:pointer;margin-left:10px;">⬇ Scarica</button>
+      </div>`).join('')}</div>` : '';
+
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <div class="file-icon">IMG</div>
+      <div class="file-info">
+        <div class="file-name" title="${escapeHtml(f.file.name)}">${escapeHtml(f.file.name)}</div>
+        <div class="file-meta">${formatBytes(f.file.size)} ${badge}</div>
+        ${resultsHtml}
+      </div>
+      <button class="remove-btn" data-remove="${f.id}" title="Rimuovi">×</button>
+    `;
+    els.fileList.appendChild(el);
+  });
+
+  els.fileList.querySelectorAll('button[data-file]').forEach(b => {
+    b.onclick = () => downloadResult(b.dataset.file, parseInt(b.dataset.idx));
+  });
+  els.fileList.querySelectorAll('button[data-remove]').forEach(b => {
+    b.onclick = () => removeFile(b.dataset.remove);
+  });
+}
+
+function refreshUI() {
+  const hasFiles = state.files.length > 0;
+  
+  // Mostra/nascondi pannello e pulsanti in base ai file
+  if (hasFiles) {
+    els.settingsPanel.classList.remove('hidden');
+  } else {
+    els.settingsPanel.classList.add('hidden');
+  }
+
+  if (state.mergedResult) {
+    els.mergedCard.classList.remove('hidden');
+    els.mergedTitle.textContent = state.mergedResult.name;
+    els.mergedSub.textContent = `PDF unito · ${formatBytes(state.mergedResult.blob.size)}`;
+  } else {
+    els.mergedCard.classList.add('hidden');
+  }
+
+  renderList();
+
+  const anyResults = state.files.some(f => f.results.length > 0);
+  if (anyResults) {
+    els.bulkActions.classList.remove('hidden');
+  } else {
+    els.bulkActions.classList.add('hidden');
+  }
+
+  els.convertBtn.disabled = state.processing || !hasFiles;
+}
+
+// Event Listeners
+els.dropZone.addEventListener('click', () => els.fileInput.click());
+els.dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  els.dropZone.classList.add('dragover');
+});
+els.dropZone.addEventListener('dragleave', () => els.dropZone.classList.remove('dragover'));
+els.dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  els.dropZone.classList.remove('dragover');
+  addFiles(e.dataTransfer.files);
+});
+els.fileInput.addEventListener('change', e => {
+  addFiles(e.target.files);
+  e.target.value = '';
+});
+
+els.quality.addEventListener('input', e => {
+  els.qualityVal.textContent = e.target.value + '%';
+});
+
+els.convertBtn.addEventListener('click', convertAll);
+els.clearBtn.addEventListener('click', clearAll);
+els.downloadZipBtn.addEventListener('click', downloadZip);
+els.downloadMergedBtn.addEventListener('click', downloadMerged);
+</script>
+</body>
+</html>
